@@ -670,34 +670,27 @@ let G = {
 function sel(id){ return document.getElementById(id); }
 
 // ── URL ENCODING ──────────────────────────────────────────────────────────
-function encFen(fen){ return btoa(fen).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_'); }
-function decFen(s){ try{return atob(s.replace(/-/g,'+').replace(/_/g,'/'))}catch(e){return INIT_FEN;} }
+function encFen(fen){ return btoa(fen).replace(/=/g,'').replace(/\+/g,'~').replace(/\//g,'_'); }
+function decFen(s){ try{return atob(s.replace(/~/g,'+').replace(/_/g,'/'))}catch(e){return INIT_FEN;} }
 
 function buildUrl(code, p1, p2, fen) {
   const base = window.location.origin + window.location.pathname;
-  const parts = [code, encodeURIComponent(p1)];
-  if(p2) parts.push(encodeURIComponent(p2));
-  parts.push(encFen(fen));
-  return base + '?pm=' + parts.join('-');
+  const p = new URLSearchParams();
+  p.set('c', code);
+  p.set('p1', p1);
+  if(p2) p.set('p2', p2);
+  p.set('g', encFen(fen));
+  return base + '?' + p.toString();
 }
 
 function parseUrl() {
   const params = new URLSearchParams(window.location.search);
-  const pm = params.get('pm');
-  if(!pm) return null;
-  // format: CODE-p1(-p2)-fenEncoded
-  // fenEncoded has no '-' (we replaced / with _ and + with -)
-  // but base64 can have '-' from our encoding. So split by '-' max segments
-  const seg = pm.split('-');
-  if(seg.length < 3) return null;
-  const code = seg[0];
-  // last segment is always fen
-  const fenEnc = seg[seg.length-1];
-  const fen = decFen(fenEnc);
-  let p1='', p2='';
-  if(code==='NEW'){ p1=decodeURIComponent(seg[1]); }
-  else { p1=decodeURIComponent(seg[1]); p2=decodeURIComponent(seg[2]); }
-  return { code, p1, p2, fen };
+  const code = params.get('c');
+  const p1   = params.get('p1');
+  const p2   = params.get('p2') || '';
+  const g    = params.get('g');
+  if(!code || !p1 || !g) return null;
+  return { code, p1, p2, fen: decFen(g) };
 }
 
 // ── CHESS ENGINE ──────────────────────────────────────────────────────────
