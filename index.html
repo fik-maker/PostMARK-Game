@@ -657,13 +657,14 @@ const PIECES = {
 };
 
 let G = {
-  screen: 'challenge', // challenge | incoming | game
+  screen: 'challenge',
   p1: '', p2: '',
   board: [], turn: 'w',
   selected: null, validMoves: [],
   code: 'NEW',
   gameOver: false,
-  currentUrl: ''
+  currentUrl: '',
+  viewer: 'p1' // 'p1' = white, 'p2' = black
 };
 
 function sel(id){ return document.getElementById(id); }
@@ -768,8 +769,19 @@ function checkStatus(board, turn){
 }
 
 // ── GAME ACTIONS ──────────────────────────────────────────────────────────
+function myTurn(){
+  if(!G.p1||!G.p2) return true; // challenge not accepted yet, allow free play
+  // who am I? determined by which name is in the URL as viewer
+  // p1 plays white (w), p2 plays black (b)
+  // G.viewer set at parse time
+  if(G.viewer==='p1') return G.turn==='w';
+  if(G.viewer==='p2') return G.turn==='b';
+  return true;
+}
+
 function selectSquare(r,c){
   if(G.gameOver) return;
+  if(!myTurn()) return;
   const piece=G.board[r][c];
   if(G.selected){
     const [sr,sc]=G.selected;
@@ -883,6 +895,7 @@ function startChallenge(){
   if(!validateName(input)) return;
   const name = input.value.trim();
   G.p1=name; G.p2='';
+  G.viewer='p1';
   G.board=fenToBoard(INIT_FEN); G.turn='w';
   G.selected=null; G.validMoves=[]; G.gameOver=false; G.code='NEW';
   const url=buildUrl('NEW',G.p1,'',INIT_FEN);
@@ -902,6 +915,7 @@ function acceptChallenge(){
   if(!validateName(input)) return;
   const name = input.value.trim();
   G.p2=name;
+  G.viewer='p2';
   showScreen('game');
   buildBoardChrome();
   renderGame();
@@ -940,7 +954,7 @@ function renderGame(){
     const dot=sel('turnDot');
     dot.className='turn-dot '+(G.turn==='w'?'white':'black');
     sel('turnName').textContent=G.gameOver?'—':currentPlayer||'';
-    sel('turnSub').textContent=G.selected?t('turnSubDest'):t('turnSubSelect');
+    sel('turnSub').textContent = G.selected ? t('turnSubDest') : myTurn() ? t('turnSubSelect') : (lang==='es'?'Esperando al rival...':'Waiting for rival...');
     // status banner
     const banner=sel('statusBanner');
     banner.className='status-banner';
@@ -1014,6 +1028,8 @@ function init(){
   G.selected=null; G.validMoves=[];
   G.gameOver=parsed.code==='END';
   G.currentUrl=window.location.href;
+  // viewer is whoever needs to move next
+  G.viewer=G.turn==='w'?'p1':'p2';
 
   if(parsed.code==='NEW'){
     // challenger already named, rival needs to enter name
