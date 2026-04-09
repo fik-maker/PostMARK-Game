@@ -908,6 +908,10 @@ function acceptChallenge(){
   G.viewer='p2';
   showScreen('game');
   buildBoardChrome();
+  // show current board state from URL, update link box
+  G.currentUrl=window.location.href;
+  sel('linkBox').textContent=G.currentUrl;
+  sel('linkBox').classList.add('ready');
   renderGame();
 }
 
