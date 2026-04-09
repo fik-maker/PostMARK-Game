@@ -770,13 +770,10 @@ function checkStatus(board, turn){
 
 // ── GAME ACTIONS ──────────────────────────────────────────────────────────
 function myTurn(){
-  if(!G.p1||!G.p2) return true; // challenge not accepted yet, allow free play
-  // who am I? determined by which name is in the URL as viewer
-  // p1 plays white (w), p2 plays black (b)
-  // G.viewer set at parse time
+  // p1 plays white, p2 plays black — strict, no exceptions
   if(G.viewer==='p1') return G.turn==='w';
   if(G.viewer==='p2') return G.turn==='b';
-  return true;
+  return false;
 }
 
 function selectSquare(r,c){
