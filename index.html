@@ -1025,9 +1025,7 @@ function init(){
   // viewer is whoever needs to move next
   G.viewer=G.turn==='w'?'p1':'p2';
 
-  if(parsed.code==='NEW'){
-    // challenger already named, rival needs to enter name
-    sel('incomingTitle').innerHTML=`<em>${parsed.p1}</em> challenges you to chess`;
+  if(parsed.code==='NEW' || !parsed.p2){
     sel('incomingTitle').innerHTML = lang==='es'
       ? `<em>${parsed.p1}</em> te reta a una partida de ajedrez`
       : `<em>${parsed.p1}</em> challenges you to chess`;
