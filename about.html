@@ -20,10 +20,14 @@ body{background:var(--bg);color:var(--ink);font-family:'Cormorant Garamond',seri
 }
 .page{max-width:680px;margin:0 auto;padding:2rem 1.5rem 5rem;}
 header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:1rem;margin-bottom:3rem;}
+.header-left{display:flex;align-items:center;gap:20px;}
 .logo{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:600;color:var(--ink);letter-spacing:-0.01em;text-decoration:none;}
 .logo span{color:var(--stamp);font-style:italic;}
-.back{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.12em;color:var(--ink-muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+.back{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.12em;color:var(--ink-muted);text-decoration:none;}
 .back:hover{color:var(--ink);}
+.lang-toggle{display:flex;gap:4px;}
+.lang-btn{font-size:11px;font-family:'DM Mono',monospace;letter-spacing:0.08em;padding:4px 8px;border:1px solid var(--border);border-radius:3px;background:transparent;color:var(--ink-muted);cursor:pointer;transition:all 0.15s;}
+.lang-btn.active{background:var(--ink);color:var(--bg);border-color:var(--ink);}
 .stamp-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--stamp);background:var(--stamp-light);border:1px solid var(--stamp);border-radius:3px;padding:4px 10px;margin-bottom:1.5rem;}
 h1{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,6vw,3.4rem);font-weight:400;line-height:1.12;color:var(--ink);margin-bottom:2rem;}
 h1 em{font-style:italic;color:var(--stamp);}
@@ -48,78 +52,152 @@ p{font-size:1.05rem;line-height:1.85;color:var(--ink-dim);margin-bottom:1.5rem;}
 <div class="page">
 
   <header>
-    <a class="logo" href="index.html">Post<span>mark</span> Games</a>
-    <a class="back" href="index.html">← Play now</a>
+    <div class="header-left">
+      <a class="logo" href="index.html">Post<span>mark</span> Games</a>
+      <a class="back" id="backLink" href="index.html">← Play now</a>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('es')">ES</button>
+    </div>
   </header>
 
-  <div class="stamp-badge">The story</div>
+  <div class="stamp-badge" id="stampBadge">The story</div>
 
-  <h1>Five minutes<br>is enough<br>to <em>play.</em></h1>
-
-  <p class="intro">We convinced ourselves that playing games requires time we don't have. A free evening. A friend available at the same moment. A dedicated hour. None of that is true.</p>
-
-  <div class="divider"></div>
-
-  <h2>The modern life problem</h2>
-
-  <p>You have a job. A family. Errands. A never-ending list of things to do. By the time you sit down, it's late, you're tired, and the idea of scheduling a game night feels like one more thing to organize.</p>
-
-  <p>So you stop playing. Not because you don't want to. Because life doesn't leave room for it.</p>
-
-  <div class="quote-block">
-    <p>But you always have five minutes. At the coffee machine. Waiting for a meeting to start. On the bus. Before bed.</p>
-  </div>
-
-  <p>That's all it takes. One move. Send it. Go back to your life. Your rival will respond when they have their five minutes. And so it goes — a game that breathes with the rhythm of real life instead of fighting it.</p>
+  <h1 id="h1"></h1>
+  <p class="intro" id="intro"></p>
 
   <div class="divider"></div>
 
-  <h2>This is how people used to play</h2>
-
-  <p>Before the internet, players sent their moves by mail. A postcard with a chess move would cross continents, take weeks to arrive, and the game would still be alive months later. People had dozens of games going at once — each with a different person, each at its own pace.</p>
-
-  <div class="quote-block">
-    <p>Bobby Fischer played correspondence games with dozens of people simultaneously. You can too — without the stamps.</p>
-  </div>
-
-  <p>Nobody thought that was unusual. It was just how you played when you couldn't be in the same room.</p>
+  <h2 id="h2a"></h2>
+  <p id="p1"></p>
+  <p id="p2"></p>
+  <div class="quote-block"><p id="q1"></p></div>
+  <p id="p3"></p>
 
   <div class="divider"></div>
 
-  <h2>Your day, scattered with moves</h2>
+  <h2 id="h2b"></h2>
+  <p id="p4"></p>
+  <div class="quote-block"><p id="q2"></p></div>
+  <p id="p5"></p>
 
+  <div class="divider"></div>
+
+  <h2 id="h2c"></h2>
   <div class="moments">
-    <div class="moment">
-      <div class="moment-time">7:42 am</div>
-      <div class="moment-text">Coffee. You move a pawn. Send the link. Your commute starts.</div>
-    </div>
-    <div class="moment">
-      <div class="moment-time">12:18 pm</div>
-      <div class="moment-text">Lunch break. Your rival responded. You think for two minutes. Move.</div>
-    </div>
-    <div class="moment">
-      <div class="moment-time">6:05 pm</div>
-      <div class="moment-text">Waiting for the bus. Three games. Three moves. Three links sent.</div>
-    </div>
-    <div class="moment">
-      <div class="moment-time">10:30 pm</div>
-      <div class="moment-text">Kids are asleep. You finally check that game from last week. It's still alive.</div>
-    </div>
+    <div class="moment"><div class="moment-time">7:42 am</div><div class="moment-text" id="m1"></div></div>
+    <div class="moment"><div class="moment-time">12:18 pm</div><div class="moment-text" id="m2"></div></div>
+    <div class="moment"><div class="moment-time">6:05 pm</div><div class="moment-text" id="m3"></div></div>
+    <div class="moment"><div class="moment-time">10:30 pm</div><div class="moment-text" id="m4"></div></div>
   </div>
 
   <div class="divider"></div>
 
-  <h2>Play anyone. Anything. Anytime.</h2>
-
-  <p>Chess, Tic Tac Toe, Connect 4 — and more to come. Any game that can be played one move at a time. With your best friend across town, a colleague in another timezone, or someone you've never met but challenged on the internet.</p>
-
-  <p>No scheduling. No "are you free tonight?" Just a link, and a move, waiting whenever they are.</p>
+  <h2 id="h2d"></h2>
+  <p id="p6"></p>
+  <p id="p7"></p>
 
   <div class="cta-block">
-    <p>You have five minutes right now.</p>
-    <a class="cta-btn" href="index.html">Send your first move →</a>
+    <p id="ctaText"></p>
+    <a class="cta-btn" href="index.html" id="ctaBtn"></a>
   </div>
 
 </div>
+
+<script>
+const T = {
+  en: {
+    title: 'The Story — Postmark Games',
+    stampBadge: 'The story',
+    backLink: '← Play now',
+    h1: 'Five minutes<br>is enough<br>to <em>play.</em>',
+    intro: 'We convinced ourselves that playing games requires time we don\'t have. A free evening. A friend available at the same moment. A dedicated hour. None of that is true.',
+    h2a: 'The modern life problem',
+    p1: 'You have a job. A family. Errands. A never-ending list of things to do. By the time you sit down, it\'s late, you\'re tired, and the idea of scheduling a game night feels like one more thing to organize.',
+    p2: 'So you stop playing. Not because you don\'t want to. Because life doesn\'t leave room for it.',
+    q1: 'But you always have five minutes. At the coffee machine. Waiting for a meeting to start. On the bus. Before bed.',
+    p3: 'That\'s all it takes. One move. Send it. Go back to your life. Your rival will respond when they have their five minutes. And so it goes — a game that breathes with the rhythm of real life instead of fighting it.',
+    h2b: 'This is how people used to play',
+    p4: 'Before the internet, players sent their moves by mail. A postcard with a chess move would cross continents, take weeks to arrive, and the game would still be alive months later. People had dozens of games going at once — each with a different person, each at its own pace.',
+    q2: 'Bobby Fischer played correspondence games with dozens of people simultaneously. You can too — without the stamps.',
+    p5: 'Nobody thought that was unusual. It was just how you played when you couldn\'t be in the same room.',
+    h2c: 'Your day, scattered with moves',
+    m1: 'Coffee. You move a pawn. Send the link. Your commute starts.',
+    m2: 'Lunch break. Your rival responded. You think for two minutes. Move.',
+    m3: 'Waiting for the bus. Three games. Three moves. Three links sent.',
+    m4: 'Kids are asleep. You finally check that game from last week. It\'s still alive.',
+    h2d: 'Play anyone. Anything. Anytime.',
+    p6: 'Chess, Tic Tac Toe, Connect 4 — and more to come. Any game that can be played one move at a time. With your best friend across town, a colleague in another timezone, or someone you\'ve never met but challenged on the internet.',
+    p7: 'No scheduling. No "are you free tonight?" Just a link, and a move, waiting whenever they are.',
+    ctaText: 'You have five minutes right now.',
+    ctaBtn: 'Send your first move →',
+  },
+  es: {
+    title: 'La historia — Postmark Games',
+    stampBadge: 'La historia',
+    backLink: '← Jugar',
+    h1: 'Cinco minutos<br>son suficientes<br>para <em>jugar.</em>',
+    intro: 'Nos convencimos de que jugar requiere tiempo que no tenemos. Una tarde libre. Un amigo disponible al mismo momento. Una hora dedicada. Nada de eso es verdad.',
+    h2a: 'El problema de la vida moderna',
+    p1: 'Tienes trabajo. Familia. Pendientes. Una lista interminable de cosas por hacer. Para cuando te sientas, es tarde, estás cansado, y la idea de organizar una noche de juegos se siente como una cosa más que coordinar.',
+    p2: 'Entonces dejas de jugar. No porque no quieras. Porque la vida no deja espacio.',
+    q1: 'Pero siempre tienes cinco minutos. En la cafetera. Esperando que empiece una junta. En el camión. Antes de dormir.',
+    p3: 'Eso es todo lo que se necesita. Un movimiento. Lo mandas. Regresas a tu vida. Tu rival responderá cuando tenga sus cinco minutos. Y así va — un juego que respira al ritmo de la vida real en lugar de pelear contra ella.',
+    h2b: 'Así jugaba la gente antes',
+    p4: 'Antes del internet, los jugadores enviaban sus movimientos por correo. Una postal con una jugada de ajedrez cruzaba continentes, tardaba semanas en llegar, y el juego seguía vivo meses después. La gente tenía docenas de partidas activas — cada una con una persona distinta, cada una a su propio ritmo.',
+    q2: 'Bobby Fischer jugaba partidas por correspondencia con decenas de personas al mismo tiempo. Tú también puedes — sin sellos.',
+    p5: 'Nadie pensaba que eso era inusual. Era simplemente cómo jugabas cuando no podías estar en la misma habitación.',
+    h2c: 'Tu día, sembrado de movimientos',
+    m1: 'Café. Mueves un peón. Mandas el link. Empieza tu día.',
+    m2: 'Hora del almuerzo. Tu rival respondió. Piensas dos minutos. Mueves.',
+    m3: 'Esperando el camión. Tres partidas. Tres movimientos. Tres links enviados.',
+    m4: 'Los niños ya duermen. Por fin revisas esa partida de la semana pasada. Sigue viva.',
+    h2d: 'Juega con quien quieras. Lo que quieras. Cuando quieras.',
+    p6: 'Ajedrez, Gato, Conecta 4 — y más por venir. Cualquier juego que pueda jugarse un movimiento a la vez. Con tu mejor amigo al otro lado de la ciudad, un colega en otra zona horaria, o alguien que nunca has conocido pero al que retaste en internet.',
+    p7: 'Sin coordinar. Sin "¿estás libre esta noche?" Solo un link y un movimiento, esperando cuando ellos puedan.',
+    ctaText: 'Tienes cinco minutos ahorita mismo.',
+    ctaBtn: 'Manda tu primer movimiento →',
+  }
+};
+
+let lang = 'en';
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  apply();
+}
+
+function apply() {
+  const L = T[lang];
+  document.title = L.title;
+  document.getElementById('stampBadge').textContent = L.stampBadge;
+  document.getElementById('backLink').textContent = L.backLink;
+  document.getElementById('h1').innerHTML = L.h1;
+  document.getElementById('intro').textContent = L.intro;
+  document.getElementById('h2a').textContent = L.h2a;
+  document.getElementById('p1').textContent = L.p1;
+  document.getElementById('p2').textContent = L.p2;
+  document.getElementById('q1').textContent = L.q1;
+  document.getElementById('p3').textContent = L.p3;
+  document.getElementById('h2b').textContent = L.h2b;
+  document.getElementById('p4').textContent = L.p4;
+  document.getElementById('q2').textContent = L.q2;
+  document.getElementById('p5').textContent = L.p5;
+  document.getElementById('h2c').textContent = L.h2c;
+  document.getElementById('m1').textContent = L.m1;
+  document.getElementById('m2').textContent = L.m2;
+  document.getElementById('m3').textContent = L.m3;
+  document.getElementById('m4').textContent = L.m4;
+  document.getElementById('h2d').textContent = L.h2d;
+  document.getElementById('p6').textContent = L.p6;
+  document.getElementById('p7').textContent = L.p7;
+  document.getElementById('ctaText').textContent = L.ctaText;
+  document.getElementById('ctaBtn').textContent = L.ctaBtn;
+}
+
+apply();
+</script>
 </body>
 </html>
