@@ -35,17 +35,18 @@ header{display:flex;align-items:flex-start;justify-content:space-between;border-
 #challengeScreen{display:flex;flex-direction:column;align-items:center;padding:2rem 1rem;text-align:center;}
 .challenge-title{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,5vw,2.8rem);font-weight:400;line-height:1.2;margin-bottom:0.5rem;}
 .challenge-sub{font-size:12px;color:var(--ink-muted);letter-spacing:0.1em;margin-bottom:1.5rem;}
-.correspondence-quote{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-style:italic;color:var(--ink-muted);max-width:320px;line-height:1.6;margin-bottom:2rem;border-left:2px solid var(--stamp);padding-left:14px;text-align:left;}
-.name-form{display:flex;flex-direction:column;gap:16px;width:100%;max-width:340px;}
+.correspondence-quote{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-style:italic;color:var(--ink-muted);max-width:480px;line-height:1.7;margin:0 auto 2.5rem;border-left:2px solid var(--stamp);padding-left:18px;text-align:left;}
+
+.name-form{display:flex;flex-direction:column;gap:16px;width:100%;max-width:480px;}
 .name-label{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-muted);text-align:left;margin-bottom:2px;}
 .name-input{font-family:'Cormorant Garamond',serif;font-size:1.3rem;padding:10px 14px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--ink);width:100%;outline:none;transition:border-color 0.15s;}
 .name-input:focus{border-color:var(--accent);}
-.game-picker{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
-.game-card{flex:1;min-width:88px;max-width:120px;padding:14px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;transition:all 0.15s;text-align:center;user-select:none;}
+.game-picker{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+.game-card{flex:1;min-width:120px;max-width:160px;padding:20px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;transition:all 0.15s;text-align:center;user-select:none;}
 .game-card:hover{border-color:var(--accent);background:var(--accent-light);}
 .game-card.selected{border-color:var(--accent);background:var(--accent-light);box-shadow:0 0 0 2px var(--accent);}
-.game-card-icon{font-size:28px;margin-bottom:6px;}
-.game-card-name{font-size:11px;letter-spacing:0.08em;color:var(--ink-muted);}
+.game-card-icon{font-size:36px;margin-bottom:8px;}
+.game-card-name{font-size:12px;letter-spacing:0.08em;color:var(--ink-muted);}
 .game-card.selected .game-card-name{color:var(--accent);}
 .btn-start{font-family:'DM Mono',monospace;font-size:13px;letter-spacing:0.08em;padding:12px 24px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;transition:opacity 0.15s;}
 .btn-start:hover{opacity:0.88;}
