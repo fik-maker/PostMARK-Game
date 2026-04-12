@@ -720,22 +720,31 @@ function init(){
     return;
   }
   applyParsed(parsed);
-  // restore viewer identity from session if available
-  const savedViewer=sessionStorage.getItem('pmViewer');
-  // for NEW links, always clear session so rival sees incoming screen
-  if(parsed.code==='NEW') sessionStorage.removeItem('pmViewer');
-  if(savedViewer&&parsed.code!=='NEW') G.viewer=savedViewer;
   G.currentUrl=window.location.href;
-  if(!parsed.p2 && G.viewer!=='p1'){
-    sel('incomingTitle').innerHTML=t('incomingMsg',parsed.p1,parsed.game);
-    // show rival message if present
-    const rmi=sel('rivalMsgIncoming');
-    if(parsed.msg){rmi.textContent='"'+parsed.msg+'"';rmi.classList.add('show');}
-    else{rmi.classList.remove('show');}
-    showScreen('incoming');
+
+  // determine who is viewing this link
+  const savedViewer=sessionStorage.getItem('pmViewer');
+  if(parsed.code==='NEW'){
+    // NEW link — only p1 who created it should skip incoming
+    if(savedViewer==='p1'){
+      // p1 reloading their own challenge
+      G.viewer='p1';
+      showScreen('game');
+      sel('linkBox').textContent=G.currentUrl;sel('linkBox').classList.add('ready');
+      renderGame();
+    } else {
+      // anyone else sees incoming screen
+      sessionStorage.removeItem('pmViewer');
+      sel('incomingTitle').innerHTML=t('incomingMsg',parsed.p1,parsed.game);
+      const rmi=sel('rivalMsgIncoming');
+      if(parsed.msg){rmi.textContent='"'+parsed.msg+'"';rmi.classList.add('show');}
+      else{rmi.classList.remove('show');}
+      showScreen('incoming');
+    }
   } else {
+    // MOV/CHK/END link — viewer is whoever needs to move
+    if(savedViewer) G.viewer=savedViewer;
     showScreen('game');
-    // show rival message banner if present
     const banner=sel('rivalMsgBanner');
     if(G.msg){
       const sender=G.viewer==='p1'?G.p2:G.p1;
