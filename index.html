@@ -341,7 +341,7 @@ function applyLang(){
 }
 
 // STATE
-let G={game:'chess',p1:'',p2:'',viewer:'p1',code:'NEW',gameOver:false,currentUrl:'',board:[],turn:'w',selected:null,validMoves:[],tttBoard:[],tttTurn:'X',c4Board:[],c4Turn:'1',msg:''};
+let G={game:'chess',p1:'',p2:'',viewer:'p1',code:'NEW',gameOver:false,currentUrl:'',board:[],turn:'w',selected:null,validMoves:[],tttBoard:[],tttTurn:'X',c4Board:[],c4Turn:'1',msg:'',moved:false};
 let selectedGame=null;
 
 function selectGame(g){
@@ -508,16 +508,13 @@ function handleC4Click(col){
 }
 
 function commitMove(){
-  // save board state but don't read message yet — user writes it after moving
+  G.moved=true;
   G.msg='';
   const url=buildUrl();G.currentUrl=url;
   window.history.replaceState({},document.title,url);
   updateOG(url);
   sel('linkBox').textContent=url;sel('linkBox').classList.add('ready');
   sel('msgInput').value='';
-  sel('msgInput').style.display='block';
-  sel('msgLabel').style.display='block';
-  // update link live as user types message
   sel('msgInput').oninput=()=>{
     G.msg=sel('msgInput').value.trim();
     const u=buildUrl();G.currentUrl=u;
@@ -562,7 +559,7 @@ function startChallenge(){
   const input=sel('nameInput');
   if(!validateName(input)||!selectedGame)return;
   G.p1=input.value.trim();G.p2='';G.game=selectedGame;G.viewer='p1';
-  G.code='NEW';G.gameOver=false;G.selected=null;G.validMoves=[];
+  G.code='NEW';G.gameOver=false;G.selected=null;G.validMoves=[];G.moved=false;
   G.board=fenToBoard(CHESS_INIT);G.turn='w';
   G.tttBoard=Array(9).fill(null);G.tttTurn='X';
   G.c4Board=initC4();G.c4Turn='1';
@@ -576,7 +573,7 @@ function startChallenge(){
 function acceptChallenge(){
   const input=sel('nameInput2');
   if(!validateName(input))return;
-  G.p2=input.value.trim();G.viewer='p2';
+  G.p2=input.value.trim();G.viewer='p2';G.moved=false;
   showScreen('game');
   G.currentUrl=window.location.href;
   sel('linkBox').textContent=G.currentUrl;sel('linkBox').classList.add('ready');
@@ -610,10 +607,9 @@ function renderGame(){
   }
   const im=sel('incomingMsg');
   if(im){if(G.msg&&!myTurn()){im.textContent='"'+G.msg+'"';im.classList.add('show');}else{im.classList.remove('show');im.textContent='';}}
-  // msg input — only show after a move has been made (linkBox is ready)
-  const moved=sel('linkBox').classList.contains('ready');
-  sel('msgInput').style.display=moved&&myTurn()?'block':'none';
-  sel('msgLabel').style.display=moved&&myTurn()?'block':'none';
+  // msg input — show after move, hide before
+  sel('msgInput').style.display=G.moved?'block':'none';
+  sel('msgLabel').style.display=G.moved?'block':'none';
   const bc=sel('boardContainer');bc.innerHTML='';
   if(G.game==='chess')renderChess(bc);
   else if(G.game==='ttt')renderTtt(bc);
