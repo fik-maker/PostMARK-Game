@@ -722,7 +722,9 @@ function init(){
   applyParsed(parsed);
   // restore viewer identity from session if available
   const savedViewer=sessionStorage.getItem('pmViewer');
-  if(savedViewer) G.viewer=savedViewer;
+  // for NEW links, always clear session so rival sees incoming screen
+  if(parsed.code==='NEW') sessionStorage.removeItem('pmViewer');
+  if(savedViewer&&parsed.code!=='NEW') G.viewer=savedViewer;
   G.currentUrl=window.location.href;
   if(!parsed.p2 && G.viewer!=='p1'){
     sel('incomingTitle').innerHTML=t('incomingMsg',parsed.p1,parsed.game);
