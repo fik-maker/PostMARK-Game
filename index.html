@@ -112,6 +112,8 @@ header{display:flex;align-items:flex-start;justify-content:space-between;border-
 .msg-section{margin-bottom:8px;}
 .msg-input{font-family:'Cormorant Garamond',serif;font-size:1rem;padding:8px 12px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--ink);width:100%;outline:none;transition:border-color 0.15s;margin-top:4px;}
 .msg-input:focus{border-color:var(--accent);}
+.msg-counter{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink-faint);text-align:right;margin-top:3px;transition:color 0.15s;}
+.msg-counter.warn{color:var(--stamp);}
 .incoming-msg{background:var(--stamp-light);border:1px solid var(--border);border-radius:5px;padding:8px 12px;font-family:'Cormorant Garamond',serif;font-size:1rem;font-style:italic;color:var(--stamp);margin-bottom:8px;display:none;}
 .incoming-msg.show{display:block;}
 .rival-msg-incoming{display:none;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-style:italic;color:var(--stamp);background:var(--stamp-light);border:1px solid var(--stamp);border-radius:6px;padding:12px 16px;margin:0 auto 1.5rem;max-width:320px;text-align:center;}
@@ -182,7 +184,11 @@ header{display:flex;align-items:flex-start;justify-content:space-between;border-
   </div>
 </div>
 
-<div id="incomingScreen">
+<div id="tamperedScreen" style="display:none;flex-direction:column;align-items:center;padding:4rem 1rem;text-align:center;">
+  <div style="font-size:48px;margin-bottom:1.5rem;">⚠️</div>
+  <div style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:400;margin-bottom:1rem;" id="tamperedTitle"></div>
+  <div style="font-size:12px;color:var(--ink-muted);letter-spacing:0.08em;max-width:320px;line-height:1.7;" id="tamperedSub"></div>
+</div>
   <div class="stamp-badge" id="stampBadge"></div>
   <div class="incoming-title" id="incomingTitle"></div>
   <div class="rival-msg-incoming" id="rivalMsgIncoming"></div>
@@ -223,6 +229,7 @@ header{display:flex;align-items:flex-start;justify-content:space-between;border-
         <div class="msg-section">
           <div class="name-label" id="msgLabel"></div>
           <input class="msg-input" id="msgInput" type="text" maxlength="60" autocomplete="off">
+          <div class="msg-counter" id="msgCounter">60</div>
         </div>
         <div class="section-label" id="shareLabel"></div>
         <div class="link-box" id="linkBox"></div>
@@ -277,6 +284,8 @@ const T={
     msgLabel:'Say something to your rival (optional)',
     msgPlaceholder:'e.g. your move 😄',
     aboutLink:'The story',
+    tamperedTitle:'This game has been altered.',
+    tamperedSub:'The link was modified after it was generated. This match cannot continue.',
     incomingMsg:(p,g)=>`<em>${p}</em> challenges you to ${GAMES[g].en}`,
   },
   es:{
@@ -304,6 +313,8 @@ const T={
     msgLabel:'Dile algo a tu rival (opcional)',
     msgPlaceholder:'ej. tu movimiento 😄',
     aboutLink:'La historia',
+    tamperedTitle:'Esta partida fue alterada.',
+    tamperedSub:'El link fue modificado después de generarse. Esta partida no puede continuar.',
     incomingMsg:(p,g)=>`<em>${p}</em> te reta a ${GAMES[g].es}`,
   }
 };
@@ -356,22 +367,38 @@ sel('nameInput').addEventListener('input',()=>{sel('btnStart').disabled=!sel('na
 function enc(s){return btoa(s).replace(/=/g,'').replace(/\+/g,'~').replace(/\//g,'_');}
 function dec(s){try{return atob(s.replace(/~/g,'+').replace(/_/g,'/'))}catch(e){return '';}}
 
+// simple checksum — djb2 hash of the game state
+const SECRET='PMG-2026';
+function hashStr(s){
+  let h=5381;
+  for(let i=0;i<s.length;i++)h=((h<<5)+h)^s.charCodeAt(i);
+  return(h>>>0).toString(36);
+}
+function makeChecksum(code,game,p1,p2,g){
+  return hashStr(SECRET+code+game+p1+p2+g);
+}
+
 function buildUrl(){
   const base=window.location.origin+window.location.pathname;
   const p=new URLSearchParams();
   p.set('c',G.code);p.set('gm',G.game);p.set('p1',G.p1);
   if(G.p2)p.set('p2',G.p2);
   if(G.msg)p.set('msg',G.msg);
-  if(G.game==='chess')p.set('g',enc(boardToFen(G.board,G.turn)));
-  if(G.game==='ttt')p.set('g',enc(G.tttBoard.map(x=>x||'-').join('')+'|'+G.tttTurn));
-  if(G.game==='c4')p.set('g',enc(G.c4Board.map(r=>r.map(x=>x||'-').join('')).join('|')+'|'+G.c4Turn));
+  let g='';
+  if(G.game==='chess')g=enc(boardToFen(G.board,G.turn));
+  if(G.game==='ttt')g=enc(G.tttBoard.map(x=>x||'-').join('')+'|'+G.tttTurn);
+  if(G.game==='c4')g=enc(G.c4Board.map(r=>r.map(x=>x||'-').join('')).join('|')+'|'+G.c4Turn);
+  p.set('g',g);
+  p.set('cs',makeChecksum(G.code,G.game,G.p1,G.p2||'',g));
   return base+'?'+p.toString();
 }
 
 function parseUrl(){
   const p=new URLSearchParams(window.location.search);
-  const code=p.get('c'),game=p.get('gm'),p1=p.get('p1'),p2=p.get('p2')||'',g=p.get('g'),msg=p.get('msg')||'';
+  const code=p.get('c'),game=p.get('gm'),p1=p.get('p1'),p2=p.get('p2')||'',g=p.get('g'),msg=(p.get('msg')||'').slice(0,60),cs=p.get('cs')||'';
   if(!code||!game||!p1||!g)return null;
+  // verify checksum — skip for NEW (first link has no cs yet for backwards compat)
+  if(cs && cs!==makeChecksum(code,game,p1,p2,g)) return{tampered:true};
   return{code,game,p1,p2,raw:dec(g),msg};
 }
 
@@ -517,6 +544,10 @@ function commitMove(){
   sel('msgInput').value='';
   sel('msgInput').oninput=()=>{
     G.msg=sel('msgInput').value.trim();
+    const left=60-sel('msgInput').value.length;
+    const counter=sel('msgCounter');
+    counter.textContent=left;
+    counter.classList.toggle('warn',left<=15);
     const u=buildUrl();G.currentUrl=u;
     window.history.replaceState({},document.title,u);
     updateOG(u);
@@ -549,10 +580,11 @@ function shareTelegram(){if(G.currentUrl)window.open('https://t.me/share/url?url
 function copyLink(){if(!G.currentUrl)return;navigator.clipboard.writeText(G.currentUrl).then(()=>{sel('copyFeedback').textContent=t('copyDone');setTimeout(()=>sel('copyFeedback').textContent='',2500);});}
 
 function showScreen(name){
-  ['challengeScreen','incomingScreen','gameScreen'].forEach(id=>sel(id).style.display='none');
+  ['challengeScreen','incomingScreen','gameScreen','tamperedScreen'].forEach(id=>sel(id).style.display='none');
   if(name==='challenge')sel('challengeScreen').style.display='flex';
   if(name==='incoming')sel('incomingScreen').style.display='flex';
   if(name==='game')sel('gameScreen').style.display='block';
+  if(name==='tampered')sel('tamperedScreen').style.display='flex';
 }
 
 function startChallenge(){
@@ -610,6 +642,7 @@ function renderGame(){
   // msg input — show after move, hide before
   sel('msgInput').style.display=G.moved?'block':'none';
   sel('msgLabel').style.display=G.moved?'block':'none';
+  sel('msgCounter').style.display=G.moved?'block':'none';
   const bc=sel('boardContainer');bc.innerHTML='';
   if(G.game==='chess')renderChess(bc);
   else if(G.game==='ttt')renderTtt(bc);
@@ -673,6 +706,12 @@ function init(){
   applyLang();
   const parsed=parseUrl();
   if(!parsed){showScreen('challenge');return;}
+  if(parsed.tampered){
+    showScreen('tampered');
+    sel('tamperedTitle').textContent=t('tamperedTitle');
+    sel('tamperedSub').textContent=t('tamperedSub');
+    return;
+  }
   applyParsed(parsed);
   G.currentUrl=window.location.href;
   if(!parsed.p2){
