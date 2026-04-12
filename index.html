@@ -596,6 +596,7 @@ function startChallenge(){
   G.tttBoard=Array(9).fill(null);G.tttTurn='X';
   G.c4Board=initC4();G.c4Turn='1';
   const url=buildUrl();G.currentUrl=url;
+  sessionStorage.setItem('pmViewer','p1');
   window.history.replaceState({},document.title,url);updateOG(url);
   showScreen('game');
   sel('linkBox').textContent=url;sel('linkBox').classList.add('ready');
@@ -606,15 +607,19 @@ function acceptChallenge(){
   const input=sel('nameInput2');
   if(!validateName(input))return;
   G.p2=input.value.trim();G.viewer='p2';G.moved=false;
+  sessionStorage.setItem('pmViewer','p2');
+  // update URL with p2 name
+  const url=buildUrl();G.currentUrl=url;
+  window.history.replaceState({},document.title,url);
   showScreen('game');
-  G.currentUrl=window.location.href;
-  sel('linkBox').textContent=G.currentUrl;sel('linkBox').classList.add('ready');
+  sel('linkBox').textContent=url;sel('linkBox').classList.add('ready');
   renderGame();
 }
 
 function newGame(){
   window.history.replaceState({},'Postmark Games',window.location.pathname);
   document.title='Postmark Games';sel('nameInput').value='';
+  sessionStorage.removeItem('pmViewer');
   selectedGame=null;document.querySelectorAll('.game-card').forEach(c=>c.classList.remove('selected'));
   sel('btnStart').disabled=true;showScreen('challenge');
 }
@@ -713,8 +718,11 @@ function init(){
     return;
   }
   applyParsed(parsed);
+  // restore viewer identity from session if available
+  const savedViewer=sessionStorage.getItem('pmViewer');
+  if(savedViewer) G.viewer=savedViewer;
   G.currentUrl=window.location.href;
-  if(!parsed.p2){
+  if(!parsed.p2 && G.viewer!=='p1'){
     sel('incomingTitle').innerHTML=t('incomingMsg',parsed.p1,parsed.game);
     // show rival message if present
     const rmi=sel('rivalMsgIncoming');
