@@ -123,6 +123,11 @@ header{display:flex;align-items:flex-start;justify-content:space-between;border-
 .rival-msg-banner.show{display:block;}
 .rival-msg-who{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--stamp);margin-bottom:4px;text-transform:uppercase;}
 .rival-msg-bubble{display:inline-block;font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-style:italic;color:var(--stamp);background:var(--stamp-light);border:1px solid var(--stamp);border-radius:0 8px 8px 8px;padding:10px 14px;max-width:100%;}
+.sq.last-from{background:#f6e88a !important;opacity:0.7;}
+.sq.last-to{background:#f6d94a !important;animation:landPiece 0.45s ease;}
+@keyframes landPiece{0%{transform:scale(1.35);opacity:0.5;}100%{transform:scale(1);opacity:1;}}
+.c4-sq.last-drop{animation:dropPiece 0.4s cubic-bezier(0.3,0,0.2,1);}
+@keyframes dropPiece{0%{transform:translateY(-200px);opacity:0;}100%{transform:translateY(0);opacity:1;}}
 @media(max-width:580px){
   .sq{width:40px;height:40px;font-size:22px;}
   .chess-board{grid-template-columns:repeat(8,40px);grid-template-rows:repeat(8,40px);}
@@ -355,7 +360,7 @@ function applyLang(){
 }
 
 // STATE
-let G={game:'chess',p1:'',p2:'',viewer:'p1',code:'NEW',gameOver:false,currentUrl:'',board:[],turn:'w',selected:null,validMoves:[],tttBoard:[],tttTurn:'X',c4Board:[],c4Turn:'1',msg:'',moved:false};
+let G={game:'chess',p1:'',p2:'',viewer:'p1',code:'NEW',gameOver:false,currentUrl:'',board:[],turn:'w',selected:null,validMoves:[],tttBoard:[],tttTurn:'X',c4Board:[],c4Turn:'1',msg:'',moved:false,lastMove:null};
 let selectedGame=null;
 
 function selectGame(g){
@@ -392,22 +397,32 @@ function buildUrl(){
   if(G.game==='ttt')g=enc(G.tttBoard.map(x=>x||'-').join('')+'|'+G.tttTurn);
   if(G.game==='c4')g=enc(G.c4Board.map(r=>r.map(x=>x||'-').join('')).join('|')+'|'+G.c4Turn);
   p.set('g',g);
+  if(G.lastMove){
+    if(G.lastMove.type==='chess') p.set('lm',G.lastMove.from[0]+','+G.lastMove.from[1]+','+G.lastMove.to[0]+','+G.lastMove.to[1]);
+    if(G.lastMove.type==='c4') p.set('lm','c4,'+G.lastMove.col+','+G.lastMove.row);
+  }
   p.set('cs',makeChecksum(G.code,G.game,G.p1,G.p2||'',g));
   return base+'?'+p.toString();
 }
 
 function parseUrl(){
   const p=new URLSearchParams(window.location.search);
-  const code=p.get('c'),game=p.get('gm'),p1=p.get('p1'),p2=p.get('p2')||'',g=p.get('g'),msg=(p.get('msg')||'').slice(0,60),cs=p.get('cs')||'';
+  const code=p.get('c'),game=p.get('gm'),p1=p.get('p1'),p2=p.get('p2')||'',g=p.get('g'),msg=(p.get('msg')||'').slice(0,60),cs=p.get('cs')||'',lm=p.get('lm')||'';
   if(!code||!game||!p1||!g)return null;
-  // verify checksum — skip for NEW (first link has no cs yet for backwards compat)
   if(cs && cs!==makeChecksum(code,game,p1,p2,g)) return{tampered:true};
-  return{code,game,p1,p2,raw:dec(g),msg};
+  let lastMove=null;
+  if(lm){
+    const pts=lm.split(',');
+    if(pts[0]==='c4') lastMove={type:'c4',col:+pts[1],row:+pts[2]};
+    else if(pts.length===4) lastMove={type:'chess',from:[+pts[0],+pts[1]],to:[+pts[2],+pts[3]]};
+  }
+  return{code,game,p1,p2,raw:dec(g),msg,lastMove};
 }
 
 function applyParsed(parsed){
   G.code=parsed.code;G.game=parsed.game;G.p1=parsed.p1;G.p2=parsed.p2;G.msg=parsed.msg||'';
   G.gameOver=parsed.code==='END';G.selected=null;G.validMoves=[];
+  G.lastMove=parsed.lastMove||null;
   if(parsed.game==='chess'){G.board=fenToBoard(parsed.raw);G.turn=parsed.raw.split(' ')[1]||'w';}
   if(parsed.game==='ttt'){const pts=parsed.raw.split('|');G.tttBoard=pts[0].split('').map(x=>x==='-'?null:x);G.tttTurn=pts[1]||'X';}
   if(parsed.game==='c4'){const pts=parsed.raw.split('|');G.c4Board=pts.slice(0,6).map(r=>r.split('').map(x=>x==='-'?null:x));G.c4Turn=pts[6]||'1';}
@@ -490,6 +505,7 @@ function handleChessClick(r,c){
       const nb=G.board.map(row=>[...row]);nb[r][c]=nb[sr][sc];nb[sr][sc]=null;
       if(nb[r][c].toLowerCase()==='p'&&(r===0||r===7))nb[r][c]=isW(nb[r][c])?'Q':'q';
       G.board=nb;G.turn=G.turn==='w'?'b':'w';G.selected=null;G.validMoves=[];
+      G.lastMove={type:'chess',from:[sr,sc],to:[r,c]};
       // check for mate: no legal moves for next player
       const hasLegal=G.board.some((row,r)=>row.some((_,c)=>G.board[r][c]&&getLegalMoves(r,c).length>0));
       const inCheck=isInCheck(G.board,G.turn);
@@ -530,7 +546,8 @@ function c4Winner(board){
 }
 function handleC4Click(col){
   if(G.gameOver||!myTurn())return;
-  if(c4Drop(col)<0)return;
+  const row=c4Drop(col);if(row<0)return;
+  G.lastMove={type:'c4',col,row};
   const w=c4Winner(G.c4Board);
   G.gameOver=!!w;G.code=G.gameOver?'END':'MOV';
   if(!G.gameOver)G.c4Turn=G.c4Turn==='1'?'2':'1';
@@ -669,6 +686,10 @@ function renderChess(container){
     const piece=G.board[r][c];if(piece)sq.textContent=PIECES[piece]||piece;
     if(G.selected&&G.selected[0]===r&&G.selected[1]===c)sq.classList.add('selected');
     if(G.validMoves.some(([mr,mc])=>mr===r&&mc===c))sq.classList.add(piece?'valid-capture':'valid-move');
+    if(G.lastMove&&G.lastMove.type==='chess'){
+      if(G.lastMove.from[0]===r&&G.lastMove.from[1]===c)sq.classList.add('last-from');
+      if(G.lastMove.to[0]===r&&G.lastMove.to[1]===c)sq.classList.add('last-to');
+    }
     sq.onclick=()=>handleChessClick(r,c);board.appendChild(sq);
   }
   const fr=document.createElement('div');fr.className='file-row';
@@ -696,6 +717,7 @@ function renderC4(container){
   for(let r=0;r<6;r++)for(let c=0;c<7;c++){
     const sq=document.createElement('div');const v=G.c4Board[r][c];
     sq.className='c4-sq'+(v?' p'+v:'')+(winSet.has(r+','+c)?' winner':'');
+    if(G.lastMove&&G.lastMove.type==='c4'&&G.lastMove.col===c&&G.lastMove.row===r) sq.classList.add('last-drop');
     board.appendChild(sq);
   }
   wrap.appendChild(btns);wrap.appendChild(board);container.appendChild(wrap);
@@ -759,6 +781,13 @@ function init(){
     }
     sel('linkBox').textContent=G.currentUrl;sel('linkBox').classList.add('ready');
     renderGame();
+    // if there's a last move to animate, scroll to board first
+    if(G.lastMove){
+      setTimeout(()=>{
+        const bc=sel('boardContainer');
+        if(bc) bc.scrollIntoView({behavior:'smooth',block:'center'});
+      },100);
+    }
   }
 }
 
