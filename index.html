@@ -580,11 +580,11 @@ function shareTelegram(){if(G.currentUrl)window.open('https://t.me/share/url?url
 function copyLink(){if(!G.currentUrl)return;navigator.clipboard.writeText(G.currentUrl).then(()=>{sel('copyFeedback').textContent=t('copyDone');setTimeout(()=>sel('copyFeedback').textContent='',2500);});}
 
 function showScreen(name){
-  ['challengeScreen','incomingScreen','gameScreen','tamperedScreen'].forEach(id=>sel(id).style.display='none');
+  ['challengeScreen','incomingScreen','gameScreen','tamperedScreen'].forEach(id=>{const el=sel(id);if(el)el.style.display='none';});
   if(name==='challenge')sel('challengeScreen').style.display='flex';
   if(name==='incoming')sel('incomingScreen').style.display='flex';
   if(name==='game')sel('gameScreen').style.display='block';
-  if(name==='tampered')sel('tamperedScreen').style.display='flex';
+  if(name==='tampered'&&sel('tamperedScreen'))sel('tamperedScreen').style.display='flex';
 }
 
 function startChallenge(){
@@ -709,6 +709,8 @@ function validateName(input){
 
 function init(){
   applyLang();
+  // if no query params at all, always go to challenge screen
+  if(!window.location.search){showScreen('challenge');return;}
   const parsed=parseUrl();
   if(!parsed){showScreen('challenge');return;}
   if(parsed.tampered){
