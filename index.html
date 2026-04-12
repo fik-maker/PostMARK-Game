@@ -109,6 +109,11 @@ header{display:flex;align-items:flex-start;justify-content:space-between;border-
 .copy-feedback{font-size:10px;color:var(--accent);letter-spacing:0.1em;height:14px;margin-top:4px;}
 .btn-new{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.08em;padding:8px 14px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--ink-muted);cursor:pointer;transition:all 0.15s;width:100%;text-align:center;}
 .btn-new:hover{color:var(--ink);border-color:var(--ink);}
+.msg-section{margin-bottom:8px;}
+.msg-input{font-family:'Cormorant Garamond',serif;font-size:1rem;padding:8px 12px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--ink);width:100%;outline:none;transition:border-color 0.15s;margin-top:4px;}
+.msg-input:focus{border-color:var(--accent);}
+.incoming-msg{background:var(--stamp-light);border:1px solid var(--border);border-radius:5px;padding:8px 12px;font-family:'Cormorant Garamond',serif;font-size:1rem;font-style:italic;color:var(--stamp);margin-bottom:8px;display:none;}
+.incoming-msg.show{display:block;}
 @media(max-width:580px){
   .sq{width:40px;height:40px;font-size:22px;}
   .chess-board{grid-template-columns:repeat(8,40px);grid-template-rows:repeat(8,40px);}
@@ -204,6 +209,11 @@ header{display:flex;align-items:flex-start;justify-content:space-between;border-
       <div class="status-banner" id="statusBanner"></div>
       <div>
         <div class="section-label" id="shareLabel"></div>
+        <div class="incoming-msg" id="incomingMsg"></div>
+        <div class="msg-section">
+          <div class="name-label" id="msgLabel"></div>
+          <input class="msg-input" id="msgInput" type="text" maxlength="60" autocomplete="off">
+        </div>
         <div class="link-box" id="linkBox"></div>
         <div class="share-buttons">
           <button class="share-btn" onclick="shareTwitter()">
@@ -253,6 +263,8 @@ const T={
     shareMove:(p1,p2,g)=>`${p1} made a move in ${GAMES[g].en}. Your turn, ${p2}`,
     shareEnd:(w,l,g)=>`${w} beat ${l} in ${GAMES[g].en} on Postmark Games.`,
     copyDone:'✓ Link copied — send it to your rival',
+    msgLabel:'Say something to your rival (optional)',
+    msgPlaceholder:'e.g. your move 😄',
     aboutLink:'The story',
     incomingMsg:(p,g)=>`<em>${p}</em> challenges you to ${GAMES[g].en}`,
   },
@@ -278,6 +290,8 @@ const T={
     shareMove:(p1,p2,g)=>`${p1} hizo su movimiento en ${GAMES[g].es}. Ahora te toca, ${p2}`,
     shareEnd:(w,l,g)=>`${w} venció a ${l} en ${GAMES[g].es} en Postmark Games.`,
     copyDone:'✓ Link copiado — mándalo a tu rival',
+    msgLabel:'Dile algo a tu rival (opcional)',
+    msgPlaceholder:'ej. tu movimiento 😄',
     aboutLink:'La historia',
     incomingMsg:(p,g)=>`<em>${p}</em> te reta a ${GAMES[g].es}`,
   }
@@ -305,6 +319,8 @@ function applyLang(){
   sel('shareLabel').textContent=t('shareLabel');
   sel('btnNew').textContent=t('btnNew');
   sel('aboutLink').textContent=t('aboutLink');
+  sel('msgLabel').textContent=t('msgLabel');
+  sel('msgInput').placeholder=t('msgPlaceholder');
   sel('btnCopy').innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> ${t('btnCopy')}`;
   sel('gname-chess').textContent=GAMES.chess[lang];
   sel('gname-ttt').textContent=GAMES.ttt[lang];
@@ -314,7 +330,7 @@ function applyLang(){
 }
 
 // STATE
-let G={game:'chess',p1:'',p2:'',viewer:'p1',code:'NEW',gameOver:false,currentUrl:'',board:[],turn:'w',selected:null,validMoves:[],tttBoard:[],tttTurn:'X',c4Board:[],c4Turn:'1'};
+let G={game:'chess',p1:'',p2:'',viewer:'p1',code:'NEW',gameOver:false,currentUrl:'',board:[],turn:'w',selected:null,validMoves:[],tttBoard:[],tttTurn:'X',c4Board:[],c4Turn:'1',msg:''};
 let selectedGame=null;
 
 function selectGame(g){
@@ -334,6 +350,7 @@ function buildUrl(){
   const p=new URLSearchParams();
   p.set('c',G.code);p.set('gm',G.game);p.set('p1',G.p1);
   if(G.p2)p.set('p2',G.p2);
+  if(G.msg)p.set('msg',G.msg);
   if(G.game==='chess')p.set('g',enc(boardToFen(G.board,G.turn)));
   if(G.game==='ttt')p.set('g',enc(G.tttBoard.map(x=>x||'-').join('')+'|'+G.tttTurn));
   if(G.game==='c4')p.set('g',enc(G.c4Board.map(r=>r.map(x=>x||'-').join('')).join('|')+'|'+G.c4Turn));
@@ -342,13 +359,13 @@ function buildUrl(){
 
 function parseUrl(){
   const p=new URLSearchParams(window.location.search);
-  const code=p.get('c'),game=p.get('gm'),p1=p.get('p1'),p2=p.get('p2')||'',g=p.get('g');
+  const code=p.get('c'),game=p.get('gm'),p1=p.get('p1'),p2=p.get('p2')||'',g=p.get('g'),msg=p.get('msg')||'';
   if(!code||!game||!p1||!g)return null;
-  return{code,game,p1,p2,raw:dec(g)};
+  return{code,game,p1,p2,raw:dec(g),msg};
 }
 
 function applyParsed(parsed){
-  G.code=parsed.code;G.game=parsed.game;G.p1=parsed.p1;G.p2=parsed.p2;
+  G.code=parsed.code;G.game=parsed.game;G.p1=parsed.p1;G.p2=parsed.p2;G.msg=parsed.msg||'';
   G.gameOver=parsed.code==='END';G.selected=null;G.validMoves=[];
   if(parsed.game==='chess'){G.board=fenToBoard(parsed.raw);G.turn=parsed.raw.split(' ')[1]||'w';}
   if(parsed.game==='ttt'){const pts=parsed.raw.split('|');G.tttBoard=pts[0].split('').map(x=>x==='-'?null:x);G.tttTurn=pts[1]||'X';}
@@ -374,19 +391,54 @@ const PIECES={'r':'♜','n':'♞','b':'♝','q':'♛','k':'♚','p':'♟','R':'�
 function fenToBoard(fen){return fen.split(' ')[0].split('/').map(row=>{const r=[];for(const ch of row){if(isNaN(ch))r.push(ch);else for(let i=0;i<+ch;i++)r.push(null);}return r;});}
 function boardToFen(board,turn){return board.map(row=>{let s='',e=0;for(const sq of row){if(!sq){e++;}else{if(e){s+=e;e=0;}s+=sq;}}if(e)s+=e;return s;}).join('/')+' '+turn+' KQkq - 0 1';}
 function isW(p){return p&&p===p.toUpperCase();}
-function chOwn(p){return G.turn==='w'?isW(p):(!isW(p)&&!!p);}
-function chEnemy(p){return G.turn==='w'?(!isW(p)&&!!p):isW(p);}
-function getChMoves(r,c){
-  const piece=G.board[r][c];if(!piece)return[];
-  const moves=[],pt=piece.toLowerCase(),dir=isW(piece)?-1:1;
-  if(pt==='p'){const nr=r+dir;if(nr>=0&&nr<8&&!G.board[nr][c])moves.push([nr,c]);const sr=isW(piece)?6:1;if(r===sr&&!G.board[r+dir][c]&&!G.board[r+2*dir][c])moves.push([r+2*dir,c]);for(const dc of[-1,1]){const nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8&&chEnemy(G.board[nr][nc]))moves.push([nr,nc]);}}
-  if(pt==='r'||pt==='q')for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0]]){let nr=r+dr,nc=c+dc;while(nr>=0&&nr<8&&nc>=0&&nc<8){if(!G.board[nr][nc]){moves.push([nr,nc]);}else{if(chEnemy(G.board[nr][nc]))moves.push([nr,nc]);break;}nr+=dr;nc+=dc;}}
-  if(pt==='b'||pt==='q')for(const[dr,dc]of[[1,1],[1,-1],[-1,1],[-1,-1]]){let nr=r+dr,nc=c+dc;while(nr>=0&&nr<8&&nc>=0&&nc<8){if(!G.board[nr][nc]){moves.push([nr,nc]);}else{if(chEnemy(G.board[nr][nc]))moves.push([nr,nc]);break;}nr+=dr;nc+=dc;}}
-  if(pt==='n')for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8&&!chOwn(G.board[nr][nc]))moves.push([nr,nc]);}
-  if(pt==='k')for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8&&!chOwn(G.board[nr][nc]))moves.push([nr,nc]);}
+function isB(p){return p&&p===p.toLowerCase()&&!!p;}
+
+function getRawMoves(board,r,c,turn){
+  const piece=board[r][c];if(!piece)return[];
+  const own=turn==='w'?isW:isB;
+  const enemy=turn==='w'?isB:isW;
+  const moves=[],pt=piece.toLowerCase(),dir=turn==='w'?-1:1;
+  if(pt==='p'){
+    const nr=r+dir;
+    if(nr>=0&&nr<8&&!board[nr][c])moves.push([nr,c]);
+    const sr=turn==='w'?6:1;
+    if(r===sr&&!board[r+dir][c]&&!board[r+2*dir][c])moves.push([r+2*dir,c]);
+    for(const dc of[-1,1]){const nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8&&enemy(board[nr][nc]))moves.push([nr,nc]);}
+  }
+  if(pt==='r'||pt==='q')for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0]]){let nr=r+dr,nc=c+dc;while(nr>=0&&nr<8&&nc>=0&&nc<8){if(!board[nr][nc]){moves.push([nr,nc]);}else{if(enemy(board[nr][nc]))moves.push([nr,nc]);break;}nr+=dr;nc+=dc;}}
+  if(pt==='b'||pt==='q')for(const[dr,dc]of[[1,1],[1,-1],[-1,1],[-1,-1]]){let nr=r+dr,nc=c+dc;while(nr>=0&&nr<8&&nc>=0&&nc<8){if(!board[nr][nc]){moves.push([nr,nc]);}else{if(enemy(board[nr][nc]))moves.push([nr,nc]);break;}nr+=dr;nc+=dc;}}
+  if(pt==='n')for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8&&!own(board[nr][nc]))moves.push([nr,nc]);}
+  if(pt==='k')for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8&&!own(board[nr][nc]))moves.push([nr,nc]);}
   return moves;
 }
-function findKing(board,color){const k=color==='w'?'K':'k';for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(board[r][c]===k)return true;return false;}
+
+function kingPos(board,color){
+  const k=color==='w'?'K':'k';
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(board[r][c]===k)return[r,c];
+  return null;
+}
+
+function isInCheck(board,color){
+  const kp=kingPos(board,color);if(!kp)return true;
+  const opp=color==='w'?'b':'w';
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    const p=board[r][c];if(!p)continue;
+    const isOpp=opp==='w'?isW(p):isB(p);if(!isOpp)continue;
+    const moves=getRawMoves(board,r,c,opp);
+    if(moves.some(([mr,mc])=>mr===kp[0]&&mc===kp[1]))return true;
+  }
+  return false;
+}
+
+function getLegalMoves(r,c){
+  const piece=G.board[r][c];if(!piece)return[];
+  const raw=getRawMoves(G.board,r,c,G.turn);
+  return raw.filter(([nr,nc])=>{
+    const nb=G.board.map(row=>[...row]);
+    nb[nr][nc]=nb[r][c];nb[r][c]=null;
+    return !isInCheck(nb,G.turn);
+  });
+}
 
 function handleChessClick(r,c){
   if(G.gameOver||!myTurn())return;
@@ -397,13 +449,19 @@ function handleChessClick(r,c){
       const nb=G.board.map(row=>[...row]);nb[r][c]=nb[sr][sc];nb[sr][sc]=null;
       if(nb[r][c].toLowerCase()==='p'&&(r===0||r===7))nb[r][c]=isW(nb[r][c])?'Q':'q';
       G.board=nb;G.turn=G.turn==='w'?'b':'w';G.selected=null;G.validMoves=[];
-      G.gameOver=!findKing(G.board,G.turn);G.code=G.gameOver?'END':'MOV';
+      // check for mate: no legal moves for next player
+      const hasLegal=G.board.some((row,r)=>row.some((_,c)=>G.board[r][c]&&getLegalMoves(r,c).length>0));
+      const inCheck=isInCheck(G.board,G.turn);
+      G.gameOver=!hasLegal;
+      G.code=G.gameOver?'END':(inCheck?'CHK':'MOV');
       commitMove();return;
     }
-    if(piece&&chOwn(piece)){G.selected=[r,c];G.validMoves=getChMoves(r,c);renderGame();return;}
+    const isOwn=G.turn==='w'?isW(piece):isB(piece);
+    if(piece&&isOwn){G.selected=[r,c];G.validMoves=getLegalMoves(r,c);renderGame();return;}
     G.selected=null;G.validMoves=[];renderGame();return;
   }
-  if(piece&&chOwn(piece)){G.selected=[r,c];G.validMoves=getChMoves(r,c);}
+  const isOwn=G.turn==='w'?isW(piece):isB(piece);
+  if(piece&&isOwn){G.selected=[r,c];G.validMoves=getLegalMoves(r,c);}
   renderGame();
 }
 
@@ -439,9 +497,11 @@ function handleC4Click(col){
 }
 
 function commitMove(){
+  G.msg=sel('msgInput').value.trim();
   const url=buildUrl();G.currentUrl=url;
   window.history.replaceState({},document.title,url);
   updateOG(url);
+  sel('msgInput').value='';
   sel('linkBox').textContent=url;sel('linkBox').classList.add('ready');
   renderGame();
 }
@@ -526,6 +586,11 @@ function renderGame(){
     else if(G.game==='ttt'){const w=tttWinner(G.tttBoard);banner.textContent=(w?t('endTttWin',w==='X'?G.p1:G.p2,w==='X'?G.p2:G.p1):t('endTttDraw'))+' '+t('newGame');}
     else banner.textContent=t('endC4',prev,other)+' '+t('newGame');
   }
+  const im=sel('incomingMsg');
+  if(G.msg&&!myTurn()){im.textContent='"'+G.msg+'"';im.classList.add('show');}
+  else{im.classList.remove('show');im.textContent='';}
+  sel('msgInput').style.display=myTurn()?'block':'none';
+  sel('msgLabel').style.display=myTurn()?'block':'none';
   const bc=sel('boardContainer');bc.innerHTML='';
   if(G.game==='chess')renderChess(bc);
   else if(G.game==='ttt')renderTtt(bc);
